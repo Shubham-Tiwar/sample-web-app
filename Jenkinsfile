@@ -25,7 +25,7 @@ pipeline {
                 sh '''
                 cd target
                 fuser -k 8081/tcp || true
-                nohup java -jar ${APP_NAME} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
+                nohup java -jar ${APP_NAME} --server.port=8081 --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
                 sleep 5
                 netstat -tuln | grep 8081 || true
                 '''
