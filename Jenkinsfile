@@ -20,17 +20,22 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+	stage('Deploy') {
             steps {
-                sh '''
-                cd target
-                fuser -k 8081/tcp || true
-                nohup java -jar ${APP_NAME} --server.port=8081 --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
-                sleep 5
-                netstat -tuln | grep 8081 || true
-                '''
-            }
-        }
+                 sh '''
+        	 cd target
+        	 fuser -k 8081/tcp || true
+     	         echo "Starting Spring Boot app in background"
+        	 nohup java -jar sample-web-app-1.0.jar --server.port=8081 --server.address=0.0.0.0 > /tmp/app.log 2>&1 &
+        	 echo $! > /tmp/springboot.pid
+      	         sleep 10
+       		 echo "--- Netstat Check ---"
+  		 netstat -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
+       		 echo "--- Tail Log ---"
+         	 tail -n 20 /tmp/app.log
+     		 '''
+    	    }
+	}
 
         stage('Verify') {
             steps {
