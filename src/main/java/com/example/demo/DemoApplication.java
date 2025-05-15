@@ -13,7 +13,7 @@ public class DemoApplication {
 
     @GetMapping("/")
     public String home() {
-        return "✅ Hello from Spring Boot deployed via Jenkins in AWS!";
+        return "✅ Hello from Spring Boot deployed via Jenkins deployed in AWS!";
     }
 }
 
