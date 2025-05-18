@@ -20,33 +20,34 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
-            steps {
-                sh '''
-                set -e
-                cd target
+       stage('Deploy') {
+    steps {
+        sh '''
+        set -e
 
-                if [ -f /tmp/springboot.pid ]; then
-                    kill $(cat /tmp/springboot.pid) || true
-                    rm -f /tmp/springboot.pid
-                fi
+        # Stop any previous app if running
+        if [ -f /tmp/springboot.pid ]; then
+            kill $(cat /tmp/springboot.pid) || true
+            rm -f /tmp/springboot.pid
+        fi
 
-                echo "Starting Spring Boot app in background"
-                nohup java -jar ${APP_NAME} \
-                    --server.port=8081 \
-                    --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
+        echo "Starting Spring Boot app in background"
+        nohup java -jar target/${APP_NAME} \
+            --server.port=8081 \
+            --server.address=0.0.0.0 > ~/app.log 2>&1 &
 
-                echo $! > /tmp/springboot.pid
-                sleep 15
+        echo $! > /tmp/springboot.pid
+        sleep 15
 
-                echo "--- Netstat Check ---"
-                ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
+        echo "--- Netstat Check ---"
+        ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
 
-                echo "--- Tail Log ---"
-                tail -n 20 ${APP_LOG}
-                '''
-            }
-        }
+        echo "--- Tail Log ---"
+        tail -n 20 ~/app.log
+        '''
+    }
+}
+
 
         stage('Verify') {
             steps {
