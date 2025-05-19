@@ -24,7 +24,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                    withSonarQubeEnv('SonarQube') { // Jenkins SonarQube server name
+                    withSonarQubeEnv('SonarQube') {
                         sh '''
                             export SONAR_TOKEN=${SONAR_TOKEN}
                             ${SONAR_SCANNER_HOME}/bin/sonar-scanner
@@ -47,25 +47,33 @@ pipeline {
                 echo "Starting Spring Boot app in background"
                 nohup java -jar target/${APP_NAME} \
                     --server.port=8081 \
-                    --server.address=0.0.0.0 > ~/app.log 2>&1 &
+                    --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
 
                 echo $! > /tmp/springboot.pid
-                sleep 15
+
+                # Wait for app to be ready
+                for i in {1..10}; do
+                    curl -s http://127.0.0.1:8081 && break
+                    echo "⏳ Waiting for app to start..."
+                    sleep 2
+                done
 
                 echo "--- Netstat Check ---"
                 ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
 
                 echo "--- Tail Log ---"
-                tail -n 20 ~/app.log
+                tail -n 20 ${APP_LOG}
                 '''
             }
         }
 
         stage('Verify') {
             steps {
-                sh 'curl -s http://localhost:8081 || echo "⚠️ App not reachable"'
-                sh 'echo "--- Last 20 lines of log ---"'
-                sh 'tail -n 20 ${APP_LOG} || echo "⚠️ No log found"'
+                sh '''
+                curl -s http://127.0.0.1:8081 || echo "⚠️ App not reachable"
+                echo "--- Last 20 lines of log ---"
+                tail -n 20 ${APP_LOG} || echo "⚠️ No log found"
+                '''
             }
         }
     }
