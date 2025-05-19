@@ -41,7 +41,14 @@ pipeline {
                    fuser -k 8081/tcp || true
 
                    # Start Spring Boot app as Jenkins user
+                   cd /var/lib/jenkins/workspace/github-auto-build/target
                    nohup java -jar target/sample-web-app-1.0.jar --server.port=8081 --server.address=0.0.0.0 > app.log 2>&1 &
+                   # Wait for app to start
+                   echo "Waiting for app to start on port 8081..."
+                   for i in {1..10}; do
+                   curl -s http://localhost:8081 && echo "App is up!" && break
+                   sleep 2
+                   done
                    '''
            } 
         }
