@@ -34,33 +34,36 @@ pipeline {
             }
         }
 
-          stage('Deploy') {
-              steps {
-                   sh '''
-                   # Kill any process on port 8081 (optional cleanup)
-                   fuser -k 8081/tcp || true
+        stage('Deploy') {
+            steps {
+                sh '''
+                echo "🔄 Killing existing app on port 8081 if any..."
+                fuser -k 8081/tcp || true
 
-                   # Start Spring Boot app as Jenkins user
-                   cd /var/lib/jenkins/workspace/github-auto-build/target
-                   nohup java -jar target/sample-web-app-1.0.jar --server.port=8081 --server.address=0.0.0.0 > app.log 2>&1 &
-                   # Wait for app to start
-                   echo "Waiting for app to start on port 8081..."
-                   for i in {1..10}; do
-                   curl -s http://localhost:8081 && echo "App is up!" && break
-                   sleep 2
-                   done
-                   '''
-           } 
+                echo "🚀 Deploying the app..."
+                cd target
+
+                nohup java -jar ${APP_NAME} --server.port=8081 --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
+
+                echo "⏳ Waiting for app to start..."
+                for i in {1..15}; do
+                    curl -s http://127.0.0.1:8081 && echo "✅ App is up!" && break
+                    sleep 2
+                done
+                '''
+            }
         }
+
         stage('Verify') {
             steps {
                 sh '''
-                echo "🔍 Verifying app"
+                echo "🔍 Verifying if app is accessible..."
+
                 if curl -s http://127.0.0.1:8081 > /dev/null; then
                     echo "✅ App is reachable"
                 else
-                    echo "❌ App is not reachable"
-                    echo "--- LOG ---"
+                    echo "❌ App is NOT reachable"
+                    echo "--- Last 30 lines of App Log ---"
                     tail -n 30 ${APP_LOG}
                     exit 1
                 fi
