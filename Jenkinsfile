@@ -5,7 +5,7 @@ pipeline {
         REPO_URL = 'https://github.com/Shubham-Tiwar/sample-web-app.git'
         APP_NAME = 'sample-web-app-1.0.jar'
         APP_LOG = '/tmp/app.log'
-        SONAR_SCANNER_HOME = tool 'SonarScanner' // Tool name you defined
+        SONAR_SCANNER_HOME = tool 'SonarScanner' // Tool name from Jenkins global config
     }
 
     stages {
@@ -22,17 +22,17 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-    steps {
-        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-            withSonarQubeEnv('SonarQube') {
-                sh """
-                    ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                    -Dsonar.login=$SONAR_TOKEN
-                """
+            steps {
+                withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv('SonarQube') { // Jenkins SonarQube server name
+                        sh '''
+                            export SONAR_TOKEN=${SONAR_TOKEN}
+                            ${SONAR_SCANNER_HOME}/bin/sonar-scanner
+                        '''
+                    }
+                }
             }
         }
-    }
-}
 
         stage('Deploy') {
             steps {
