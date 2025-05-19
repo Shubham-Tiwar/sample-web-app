@@ -5,6 +5,7 @@ pipeline {
         REPO_URL = 'https://github.com/Shubham-Tiwar/sample-web-app.git'
         APP_NAME = 'sample-web-app-1.0.jar'
         APP_LOG = '/tmp/app.log'
+        SONAR_SCANNER_HOME = tool 'SonarScanner' // Tool name you defined
     }
 
     stages {
@@ -20,34 +21,40 @@ pipeline {
             }
         }
 
-       stage('Deploy') {
-    steps {
-        sh '''
-        set -e
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') { // Server name from Jenkins config
+                    sh "${SONAR_SCANNER_HOME}/bin/sonar-scanner"
+                }
+            }
+        }
 
-        # Stop any previous app if running
-        if [ -f /tmp/springboot.pid ]; then
-            kill $(cat /tmp/springboot.pid) || true
-            rm -f /tmp/springboot.pid
-        fi
+        stage('Deploy') {
+            steps {
+                sh '''
+                set -e
 
-        echo "Starting Spring Boot app in background"
-        nohup java -jar target/${APP_NAME} \
-            --server.port=8081 \
-            --server.address=0.0.0.0 > ~/app.log 2>&1 &
+                if [ -f /tmp/springboot.pid ]; then
+                    kill $(cat /tmp/springboot.pid) || true
+                    rm -f /tmp/springboot.pid
+                fi
 
-        echo $! > /tmp/springboot.pid
-        sleep 15
+                echo "Starting Spring Boot app in background"
+                nohup java -jar target/${APP_NAME} \
+                    --server.port=8081 \
+                    --server.address=0.0.0.0 > ~/app.log 2>&1 &
 
-        echo "--- Netstat Check ---"
-        ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
+                echo $! > /tmp/springboot.pid
+                sleep 15
 
-        echo "--- Tail Log ---"
-        tail -n 20 ~/app.log
-        '''
-    }
-}
+                echo "--- Netstat Check ---"
+                ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
 
+                echo "--- Tail Log ---"
+                tail -n 20 ~/app.log
+                '''
+            }
+        }
 
         stage('Verify') {
             steps {
@@ -58,3 +65,4 @@ pipeline {
         }
     }
 }
+
