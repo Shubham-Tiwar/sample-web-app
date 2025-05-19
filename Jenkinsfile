@@ -22,12 +22,17 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') { // Server name from Jenkins config
-                    sh "${SONAR_SCANNER_HOME}/bin/sonar-scanner"
-                }
+    steps {
+        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+            withSonarQubeEnv('SonarQube') {
+                sh """
+                    ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                    -Dsonar.login=$SONAR_TOKEN
+                """
             }
         }
+    }
+}
 
         stage('Deploy') {
             steps {
