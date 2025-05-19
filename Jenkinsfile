@@ -37,27 +37,12 @@ pipeline {
           stage('Deploy') {
               steps {
                    sh '''
-                   cd /var/lib/jenkins/workspace/github-auto-build/target
-                   if [ -f /tmp/springboot.pid ]; then
-                   kill $(cat /tmp/springboot.pid) || true
-                   rm -f /tmp/springboot.pid
-                   fi
+                   # Kill any process on port 8081 (optional cleanup)
+                   fuser -k 8081/tcp || true
 
-                   echo "Starting Spring Boot app in background"
-                   nohup java -jar sample-web-app-1.0.jar \
-                   --server.port=8081 \
-                   --server.address=0.0.0.0 > ~/app.log 2>&1 &
-
-                   echo $! > /tmp/springboot.pid
-                   sleep 15
-
-                   echo "--- Netstat Check ---"
-                   ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
-
-                   echo "--- Tail Log ---"
-                   tail -n 20 ~/app.log
-                  '''
-         
+                   # Start Spring Boot app as Jenkins user
+                   nohup java -jar target/sample-web-app-1.0.jar --server.port=8081 --server.address=0.0.0.0 > app.log 2>&1 &
+                   '''
            } 
         }
         stage('Verify') {
