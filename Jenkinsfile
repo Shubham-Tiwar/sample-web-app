@@ -34,51 +34,36 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
-            steps {
-                sh '''
-                set -e
+         stage('Deploy') {
+    steps {
+        sh '''
+        set -e
 
-                JAR_PATH=target/${APP_NAME}
+        APP_JAR=target/${APP_NAME}
+        LOG_FILE=/tmp/app.log
+        PID_FILE=/tmp/springboot.pid
 
-                if [ ! -f "$JAR_PATH" ]; then
-                    echo "❌ JAR file not found at $JAR_PATH"
-                    exit 1
-                fi
+        # Stop previous app if running
+        if [ -f $PID_FILE ]; then
+            echo "Stopping old app..."
+            kill $(cat $PID_FILE) || true
+            rm -f $PID_FILE
+        fi
 
-                echo "🔁 Killing previous app if running"
-                if [ -f /tmp/springboot.pid ]; then
-                    kill $(cat /tmp/springboot.pid) || true
-                    rm -f /tmp/springboot.pid
-                fi
+        echo "Starting app..."
+        nohup java -jar $APP_JAR --server.port=8081 --server.address=0.0.0.0 > $LOG_FILE 2>&1 &
 
-                echo "🚀 Starting Spring Boot app"
-                nohup java -jar $JAR_PATH \
-                    --server.port=8081 \
-                    --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
+        echo $! > $PID_FILE
+        sleep 10
 
-                echo $! > /tmp/springboot.pid
-                sleep 5
+        echo "--- Port Check ---"
+        ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
 
-                echo "⏳ Waiting for app to start on port 8081"
-                for i in {1..10}; do
-                    if curl -s http://127.0.0.1:8081 > /dev/null; then
-                        echo "✅ App is running"
-                        break
-                    else
-                        echo "⏱️ Not ready yet..."
-                        sleep 2
-                    fi
-                done
-
-                echo "📡 Netstat check:"
-                ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
-
-                echo "📜 Last log lines:"
-                tail -n 20 ${APP_LOG}
-                '''
-            }
-        }
+        echo "--- Log Preview ---"
+        tail -n 20 $LOG_FILE
+        '''
+    }
+}
 
         stage('Verify') {
             steps {
