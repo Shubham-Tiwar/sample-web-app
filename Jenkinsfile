@@ -34,30 +34,31 @@ pipeline {
             }
         }
 
-         stage('Deploy') {
-    steps {
-        sh '''
-        set -e
+          stage('Deploy') {
+              steps {
+                  sh '''
+                  set -e
 
-        APP_JAR=target/${APP_NAME}
-        LOG_FILE=/tmp/app.log
-        PID_FILE=/tmp/springboot.pid
+                  # Stop existing app
+                  if [ -f /tmp/springboot.pid ]; then
+                  echo "Stopping existing app..."
+                  kill $(cat /tmp/springboot.pid) || true
+                  rm -f /tmp/springboot.pid
+                  fi
 
-        if [ -f $PID_FILE ]; then
-            kill $(cat $PID_FILE) || true
-            rm -f $PID_FILE
-        fi
+                  echo "Starting Spring Boot app in background..."
+                  nohup java -jar target/sample-web-app-1.0.jar \
+                  --server.port=8081 \
+                  --server.address=0.0.0.0 > /tmp/app.log 2>&1 &
 
-        nohup java -jar $APP_JAR --server.port=8081 --server.address=0.0.0.0 > $LOG_FILE 2>&1 &
-        echo $! > $PID_FILE
+                  echo $! > /tmp/springboot.pid
+                  sleep 10
 
-        sleep 10
-        ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
-        tail -n 20 $LOG_FILE
-        '''
-    }
-}
-
+                  echo "Checking if app is running on port 8081..."
+                  ss -tunlp | grep 8081 || (echo "❌ App not running on 8081" && tail -n 50 /tmp/app.log && exit 1)
+                  '''
+              }
+        }
         stage('Verify') {
             steps {
                 sh '''
