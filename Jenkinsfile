@@ -36,28 +36,29 @@ pipeline {
 
           stage('Deploy') {
               steps {
-                  sh '''
-                  set -e
+                   sh '''
+                   cd /var/lib/jenkins/workspace/github-auto-build/target
+                   if [ -f /tmp/springboot.pid ]; then
+                   kill $(cat /tmp/springboot.pid) || true
+                   rm -f /tmp/springboot.pid
+                   fi
 
-                  # Stop existing app
-                  if [ -f /tmp/springboot.pid ]; then
-                  echo "Stopping existing app..."
-                  kill $(cat /tmp/springboot.pid) || true
-                  rm -f /tmp/springboot.pid
-                  fi
+                   echo "Starting Spring Boot app in background"
+                   nohup java -jar sample-web-app-1.0.jar \
+                   --server.port=8081 \
+                   --server.address=0.0.0.0 > ~/app.log 2>&1 &
 
-                  echo "Starting Spring Boot app in background..."
-                  nohup java -jar target/sample-web-app-1.0.jar \
-                  --server.port=8081 \
-                  --server.address=0.0.0.0 > /tmp/app.log 2>&1 &
+                   echo $! > /tmp/springboot.pid
+                   sleep 15
 
-                  echo $! > /tmp/springboot.pid
-                  sleep 10
+                   echo "--- Netstat Check ---"
+                   ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
 
-                  echo "Checking if app is running on port 8081..."
-                  ss -tunlp | grep 8081 || (echo "❌ App not running on 8081" && tail -n 50 /tmp/app.log && exit 1)
+                   echo "--- Tail Log ---"
+                   tail -n 20 ~/app.log
                   '''
-              }
+         
+           } 
         }
         stage('Verify') {
             steps {
