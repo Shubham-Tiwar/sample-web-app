@@ -43,23 +43,16 @@ pipeline {
         LOG_FILE=/tmp/app.log
         PID_FILE=/tmp/springboot.pid
 
-        # Stop previous app if running
         if [ -f $PID_FILE ]; then
-            echo "Stopping old app..."
             kill $(cat $PID_FILE) || true
             rm -f $PID_FILE
         fi
 
-        echo "Starting app..."
         nohup java -jar $APP_JAR --server.port=8081 --server.address=0.0.0.0 > $LOG_FILE 2>&1 &
-
         echo $! > $PID_FILE
+
         sleep 10
-
-        echo "--- Port Check ---"
         ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
-
-        echo "--- Log Preview ---"
         tail -n 20 $LOG_FILE
         '''
     }
