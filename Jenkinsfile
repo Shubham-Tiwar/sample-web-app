@@ -50,7 +50,7 @@ pipeline {
                         --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
 
                     echo \$! > /tmp/springboot.pid
-                    sleep 15
+                    sleep 10
 
                     echo "--- Netstat Check ---"
                     ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
