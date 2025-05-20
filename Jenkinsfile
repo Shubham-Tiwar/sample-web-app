@@ -67,7 +67,7 @@ pipeline {
             }
         }
 
-         stage('Verify') {
+        stage('Verify') {
             steps {
                 sh """
                     echo "🔍 Verifying if app is accessible..."
@@ -83,8 +83,7 @@ pipeline {
                 """
             }
         }
-
-
+    }
 
     post {
         failure {
@@ -108,7 +107,7 @@ pipeline {
                     mkdir -p ${BUILD_DIR}/target
 
                     echo "🔁 Rolling back to build #${rollbackBuild}"
-                    cp ${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${rollbackBuild}/archive/target/${APP_NAME} ${BUILD_DIR}/target/${APP_NAME}
+                    cp /var/lib/jenkins/jobs/${JOB_NAME}/builds/${rollbackBuild}/archive/target/${APP_NAME} ${BUILD_DIR}/target/${APP_NAME}
 
                     echo "▶️ Restarting old version"
                     cd ${BUILD_DIR}/target
@@ -126,6 +125,6 @@ pipeline {
                 """
             }
         }
+    }
 }
-}
-}
+
