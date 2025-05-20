@@ -45,9 +45,10 @@ pipeline {
                     fi
 
                     echo "Starting Spring Boot app in background"
-                    nohup java -jar target/${APP_NAME} \
-                        --server.port=8081 \
-                        --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
+                    #nohup java -jar target/${APP_NAME} \
+                    #    --server.port=8081 \
+                    #    --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
+                    nohup java -jar target/${APP_NAME} --server.port=8081 --server.address=0.0.0.0
 
                     echo \$! > /tmp/springboot.pid
                     sleep 10
