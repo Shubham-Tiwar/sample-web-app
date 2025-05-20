@@ -60,7 +60,7 @@ pipeline {
                     tail -n 20 ${APP_LOG}
                 """
             }
-        }
+        }:contentReference[oaicite:116]{index=116}
 
         stage('Verify') {
             steps {
