@@ -37,7 +37,7 @@ pipeline {
             steps {
                 sh """
                     set -e
-
+                    cd /var/lib/jenkins/workspace/github-auto-build/target
                     # Stop any previous app if running
                     if [ -f /tmp/springboot.pid ]; then
                         kill \$(cat /tmp/springboot.pid) || true
@@ -48,7 +48,7 @@ pipeline {
                     #nohup java -jar target/${APP_NAME} \
                     #    --server.port=8081 \
                     #    --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
-                    nohup java -jar target/${APP_NAME} --server.port=8081 --server.address=0.0.0.0
+                    nohup java -jar ${APP_NAME} --server.port=8081 --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
 
                     echo \$! > /tmp/springboot.pid
                     sleep 10
