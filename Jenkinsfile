@@ -67,17 +67,25 @@ pipeline {
             }
         }
 
-
-
-       stage('Verify') {
+         stage('Verify') {
             steps {
                 sh """
-                    echo "🔍 Forcing Verify stage to fail to test rollback..."
-                    exit 1
+                    #!/bin/bash
+                    echo "🔍 Verifying if app is accessible..."
+
+                    if curl -s http://127.0.0.1:${DEPLOY_PORT} > /dev/null; then
+                        echo "✅ App is reachable"
+                    else
+                        echo "❌ App is NOT reachable"
+                        echo "--- Last 30 lines of App Log ---"
+                        tail -n 30 ${APP_LOG}
+                        exit 1
+                    fi
                 """
             }
         }
-    }
+
+
 
     post {
         failure {
