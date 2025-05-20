@@ -25,10 +25,10 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                     withSonarQubeEnv('SonarQube') {
-                        sh '''
+                        sh """
                             export SONAR_TOKEN=${SONAR_TOKEN}
                             ${SONAR_SCANNER_HOME}/bin/sonar-scanner
-                        '''
+                        """
                     }
                 }
             }
@@ -36,7 +36,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh '''
+                sh """
                 echo "🔄 Killing existing app on port 8081 if any..."
                 fuser -k 8081/tcp || true
 
@@ -49,13 +49,13 @@ pipeline {
                     curl -s http://127.0.0.1:8081 && echo "✅ App is up!" && break
                     sleep 2
                 done
-                '''
+                """
             }
         }
 
         stage('Verify') {
             steps {
-                sh '''
+                sh """
                 echo "🔍 Verifying if app is accessible..."
 
                 if curl -s http://127.0.0.1:8081 > /dev/null; then
@@ -66,7 +66,7 @@ pipeline {
                     tail -n 30 ${APP_LOG}
                     exit 1
                 fi
-                '''
+                """
             }
         }
     }
