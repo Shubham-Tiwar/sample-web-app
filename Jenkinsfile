@@ -7,6 +7,7 @@ pipeline {
         APP_LOG = '/tmp/app.log'
         SONAR_SCANNER_HOME = tool 'SonarScanner'
         JOB_NAME = 'github-auto-build'
+        APP_PORT = '8081'
     }
 
     stages {
@@ -38,7 +39,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh """
+                sh(script: """
                     set -e
                     cd /var/lib/jenkins/workspace/${JOB_NAME}/target
 
@@ -48,16 +49,19 @@ pipeline {
                     fi
 
                     echo "Starting Spring Boot app in background"
-                    JENKINS_NODE_COOKIE=dontKillMe nohup java -jar ${APP_NAME} --server.port=8082 --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
+                    JENKINS_NODE_COOKIE=dontKillMe nohup java -jar ${APP_NAME} --server.port=${APP_PORT} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
                     echo \$! > /tmp/springboot.pid
                     sleep 10
 
                     echo "--- Netstat Check ---"
-                    ss -tuln | grep 8081 || echo "⚠️ Port 8081 not active"
+                    if ! ss -tuln | grep ${APP_PORT}; then
+                        echo "⚠️ Port ${APP_PORT} not active"
+                        exit 1
+                    fi
 
                     echo "--- Tail Log ---"
                     tail -n 20 ${APP_LOG}
-                """
+                """, shell: '/bin/bash')
             }
         }
 
@@ -66,7 +70,7 @@ pipeline {
                 sh """
                     echo "🔍 Verifying if app is accessible..."
 
-                    if curl -s http://127.0.0.1:8081 > /dev/null; then
+                    if curl -s http://127.0.0.1:${APP_PORT} > /dev/null; then
                         echo "✅ App is reachable"
                     else
                         echo "❌ App is NOT reachable"
@@ -82,7 +86,7 @@ pipeline {
     post {
         failure {
             echo '❌ Deployment failed. Rolling back to previous version...'
-            sh '''
+            sh(script: '''
                 set -e
                 PREV_BUILD=$(expr $(cat /tmp/last_successful_build.txt) - 1)
                 if [ $PREV_BUILD -le 0 ]; then
@@ -97,13 +101,16 @@ pipeline {
 
                 echo "Rolling back to build #$PREV_BUILD"
                 cp /var/lib/jenkins/jobs/${JOB_NAME}/builds/$PREV_BUILD/archive/target/${APP_NAME} target/${APP_NAME}
-                nohup java -jar target/${APP_NAME} --server.port=8081 --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
+                nohup java -jar target/${APP_NAME} --server.port=${APP_PORT} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
                 echo $! > /tmp/springboot.pid
                 sleep 10
 
                 echo "--- Rollback Verification ---"
-                curl -s http://127.0.0.1:8081 || echo "⚠️ Rollback failed"
-            '''
+                if ! curl -s http://127.0.0.1:${APP_PORT} > /dev/null; then
+                    echo "⚠️ Rollback failed: Application not reachable on port ${APP_PORT}"
+                    exit 1
+                fi
+            ''', shell: '/bin/bash')
         }
     }
 }
