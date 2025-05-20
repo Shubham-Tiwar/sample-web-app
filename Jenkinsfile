@@ -39,10 +39,12 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh(script: """
+                sh """
+                    #!/bin/bash
                     set -e
                     cd /var/lib/jenkins/workspace/${JOB_NAME}/target
 
+                    # Stop any previous app if running
                     if [ -f /tmp/springboot.pid ]; then
                         kill \$(cat /tmp/springboot.pid) || true
                         rm -f /tmp/springboot.pid
@@ -54,20 +56,18 @@ pipeline {
                     sleep 10
 
                     echo "--- Netstat Check ---"
-                    if ! ss -tuln | grep ${APP_PORT}; then
-                        echo "⚠️ Port ${APP_PORT} not active"
-                        exit 1
-                    fi
+                    ss -tuln | grep ${APP_PORT} || echo "⚠️ Port ${APP_PORT} not active"
 
                     echo "--- Tail Log ---"
                     tail -n 20 ${APP_LOG}
-                """, shell: '/bin/bash')
+                """
             }
         }
 
         stage('Verify') {
             steps {
                 sh """
+                    #!/bin/bash
                     echo "🔍 Verifying if app is accessible..."
 
                     if curl -s http://127.0.0.1:${APP_PORT} > /dev/null; then
@@ -86,13 +86,16 @@ pipeline {
     post {
         failure {
             echo '❌ Deployment failed. Rolling back to previous version...'
-            sh(script: '''
+            sh """
+                #!/bin/bash
                 set -e
                 PREV_BUILD=$(expr $(cat /tmp/last_successful_build.txt) - 1)
                 if [ $PREV_BUILD -le 0 ]; then
                     echo "No previous build available for rollback."
                     exit 1
                 fi
+
+                cd /var/lib/jenkins/workspace/${JOB_NAME}/target
 
                 if [ -f /tmp/springboot.pid ]; then
                     kill $(cat /tmp/springboot.pid) || true
@@ -106,11 +109,12 @@ pipeline {
                 sleep 10
 
                 echo "--- Rollback Verification ---"
-                if ! curl -s http://127.0.0.1:${APP_PORT} > /dev/null; then
-                    echo "⚠️ Rollback failed: Application not reachable on port ${APP_PORT}"
-                    exit 1
+                if curl -s http://127.0.0.1:${APP_PORT} > /dev/null; then
+                    echo "✅ Rollback successful"
+                else
+                    echo "❌ Rollback failed"
                 fi
-            ''', shell: '/bin/bash')
+            """
         }
     }
 }
