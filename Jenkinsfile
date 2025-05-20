@@ -70,6 +70,7 @@ pipeline {
         stage('Verify') {
             steps {
                 sh """
+                    exit 1
                     echo "🔍 Verifying if app is accessible..."
 
                     if curl -s http://127.0.0.1:${DEPLOY_PORT} > /dev/null; then
