@@ -48,7 +48,7 @@ pipeline {
                     fi
 
                     echo "Starting Spring Boot app in background"
-                    JENKINS_NODE_COOKIE=dontKillMe nohup java -jar ${APP_NAME} --server.port=8082 --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
+                    JENKINS_NODE_COOKIE=dontKillMe nohup java -jar ${APP_NAME} --server.port=8081 --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
                     echo \$! > /tmp/springboot.pid
                     sleep 10
 
