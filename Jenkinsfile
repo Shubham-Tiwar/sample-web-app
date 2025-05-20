@@ -41,8 +41,7 @@ pipeline {
                 fuser -k 8081/tcp || true
 
                 echo "🚀 Deploying the app..."
-                cd target
-
+                cd /var/lib/jenkins/workspace/github-auto-build/target
                 nohup java -jar ${APP_NAME} --server.port=8081 --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
 
                 echo "⏳ Waiting for app to start..."
