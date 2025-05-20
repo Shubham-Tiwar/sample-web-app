@@ -85,7 +85,7 @@ pipeline {
     post {
         failure {
             echo '❌ Deployment failed. Rolling back to previous version...'
-            sh '''
+            sh """
                 #!/bin/bash
                 set -e
                 PREV_BUILD=$(expr $(cat /tmp/last_successful_build.txt) - 1)
@@ -104,8 +104,8 @@ pipeline {
 
                 echo "Rolling back to build #$PREV_BUILD"
                 cp /var/lib/jenkins/jobs/${JOB_NAME}/builds/$PREV_BUILD/archive/target/${APP_NAME} target/${APP_NAME}
-                #JENKINS_NODE_COOKIE=dontKillMe nohup java -jar target/${APP_NAME} --server.port=${DEPLOY_PORT} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
-                nohup java -jar target/${APP_NAME} --server.port=${DEPLOY_PORT} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
+                JENKINS_NODE_COOKIE=dontKillMe nohup java -jar target/${APP_NAME} --server.port=${DEPLOY_PORT} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
+               # nohup java -jar target/${APP_NAME} --server.port=${DEPLOY_PORT} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
                 echo $! > /tmp/springboot.pid
                 sleep 10
 
@@ -116,7 +116,7 @@ pipeline {
                     echo "❌ Rollback failed"
                     exit 1
                 fi
-            '''
+            """
         }
     }
 }
