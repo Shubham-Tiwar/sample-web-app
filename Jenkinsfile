@@ -7,7 +7,7 @@ pipeline {
         APP_LOG = '/tmp/app.log'
         SONAR_SCANNER_HOME = tool 'SonarScanner'
         JOB_NAME = 'github-auto-build'
-        DEPLOY_PORT = '8081'
+        DEPLOY_PORT = '8082'
     }
 
     stages {
