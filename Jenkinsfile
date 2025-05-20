@@ -42,7 +42,7 @@ pipeline {
 
                 echo "🚀 Deploying the app..."
                 cd /var/lib/jenkins/workspace/github-auto-build/target
-                nohup java -jar ${APP_NAME} --server.port=8081 --server.address=0.0.0.0 > ${APP_LOG} 2>&1 &
+                nohup java -jar ${env.APP_NAME} --server.port=8081 --server.address=0.0.0.0 > ${env.APP_LOG} 2>&1 &
 
                 echo "⏳ Waiting for app to start..."
                 for i in {1..15}; do
