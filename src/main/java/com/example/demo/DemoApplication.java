@@ -13,7 +13,7 @@ public class DemoApplication {
 
     @GetMapping("/")
     public String home() {
-        return "✅ Hello from Spring-Boot java app deployed !";
+        return "✅ Hello from Spring-Boot java app deployed from VM !";
     }
 }
 
