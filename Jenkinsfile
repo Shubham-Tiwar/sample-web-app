@@ -45,7 +45,7 @@ pipeline {
                 nohup java -jar ${env.APP_NAME} --server.port=8081 --server.address=0.0.0.0 > ${env.APP_LOG} 2>&1 &
 
                 echo "⏳ Waiting for app to start..."
-                for i in {1..15}; do
+                for i in {1..30}; do
                     curl -s http://127.0.0.1:8081 && echo "✅ App is up!" && break
                     sleep 2
                 done
