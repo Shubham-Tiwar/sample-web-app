@@ -29,10 +29,9 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                     withSonarQubeEnv('SonarQube') {
-                        sh '''
-                            #!/bin/bash
+                        sh """
                             ${SONAR_SCANNER_HOME}/bin/sonar-scanner
-                        '''
+                        """
                     }
                 }
             }
@@ -40,20 +39,19 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh '''
-                    #!/bin/bash
+                sh """
                     set -e
                     cd /var/lib/jenkins/workspace/${JOB_NAME}/target
 
                     # Stop any previous app if running
                     if [ -f /tmp/springboot.pid ]; then
-                        kill $(cat /tmp/springboot.pid) || true
+                        kill \$(cat /tmp/springboot.pid) || true
                         rm -f /tmp/springboot.pid
                     fi
 
                     echo "Starting Spring Boot app in background"
                     JENKINS_NODE_COOKIE=dontKillMe nohup java -jar ${APP_NAME} --server.port=${DEPLOY_PORT} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
-                    echo $! > /tmp/springboot.pid
+                    echo \$! > /tmp/springboot.pid
                     sleep 10
 
                     echo "--- Netstat Check ---"
@@ -61,13 +59,13 @@ pipeline {
 
                     echo "--- Tail Log ---"
                     tail -n 20 ${APP_LOG}
-                '''
+                """
             }
         }
 
         stage('Verify') {
             steps {
-                sh '''
+                sh """
                     #!/bin/bash
                     echo "🔍 Verifying if app is accessible..."
 
@@ -79,7 +77,7 @@ pipeline {
                         tail -n 30 ${APP_LOG}
                         exit 1
                     fi
-                '''
+                """
             }
         }
     }
@@ -96,8 +94,8 @@ pipeline {
                     exit 1
                 fi
 
-                cd /var/lib/jenkins/workspace/${JOB_NAME}
-                mkdir -p target
+                #cd /var/lib/jenkins/workspace/${JOB_NAME}
+                #mkdir -p target
 
                 if [ -f /tmp/springboot.pid ]; then
                     kill $(cat /tmp/springboot.pid) || true
@@ -106,7 +104,8 @@ pipeline {
 
                 echo "Rolling back to build #$PREV_BUILD"
                 cp /var/lib/jenkins/jobs/${JOB_NAME}/builds/$PREV_BUILD/archive/target/${APP_NAME} target/${APP_NAME}
-                JENKINS_NODE_COOKIE=dontKillMe nohup java -jar target/${APP_NAME} --server.port=${DEPLOY_PORT} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
+                #JENKINS_NODE_COOKIE=dontKillMe nohup java -jar target/${APP_NAME} --server.port=${DEPLOY_PORT} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
+                nohup java -jar target/${APP_NAME} --server.port=${DEPLOY_PORT} --server.address=0.0.0.0 > ${APP_LOG} 2>&1 & disown
                 echo $! > /tmp/springboot.pid
                 sleep 10
 
